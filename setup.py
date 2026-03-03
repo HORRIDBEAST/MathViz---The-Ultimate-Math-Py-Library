@@ -10,7 +10,7 @@ def read_long_description():
     return "Interactive mathematical visualization library"
 
 setup(
-    name="mathviz",
+    name="mathvizpro",
     version="0.1.0",
     author="MathViz Contributors",
     author_email="mathviz@example.com",

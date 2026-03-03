@@ -23,18 +23,24 @@ MathViz makes it easy to explore mathematical concepts through interactive plots
 
 ## Installation
 
+### From PyPI
+
+```bash
+pip install mathvizpro
+```
+
+### With Jupyter support
+
+```bash
+pip install mathvizpro[jupyter]
+```
+
 ### From source (development)
 
 ```bash
 git clone https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library.git
 cd MathViz---The-Ultimate-Math-Py-Library
 pip install -e .
-```
-
-### With Jupyter support
-
-```bash
-pip install -e ".[jupyter]"
 ```
 
 ### Requirements
