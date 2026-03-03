@@ -31,6 +31,10 @@ venv.bak/
 # ── Distribution / packaging ──────────────────────────────────────────────────
 *.tar.gz
 *.whl
+dist/
+build/
+# sdist staging directories (mathviz-X.Y.Z/)
+mathviz-*/
 
 # ── Testing & coverage ────────────────────────────────────────────────────────
 .pytest_cache/

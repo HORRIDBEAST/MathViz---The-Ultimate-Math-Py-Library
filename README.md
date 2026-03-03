@@ -26,8 +26,8 @@ MathViz makes it easy to explore mathematical concepts through interactive plots
 ### From source (development)
 
 ```bash
-git clone https://github.com/yourusername/mathviz.git
-cd mathviz
+git clone https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library.git
+cd MathViz---The-Ultimate-Math-Py-Library
 pip install -e .
 ```
 
@@ -345,6 +345,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Run tests: `pytest tests/`
-4. Submit a pull request
+4. Submit a pull request to [HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library](https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library)
 
 Please ensure all existing tests pass and add tests for new functionality.

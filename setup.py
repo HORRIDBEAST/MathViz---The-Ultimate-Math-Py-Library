@@ -17,11 +17,10 @@ setup(
     description="Interactive mathematical visualization library for education and exploration",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/mathviz",
+    url="https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library",
     project_urls={
-        "Bug Tracker": "https://github.com/yourusername/mathviz/issues",
-        "Documentation": "https://github.com/yourusername/mathviz/wiki",
-        "Source Code": "https://github.com/yourusername/mathviz",
+        "Bug Tracker": "https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library/issues",
+        "Source Code": "https://github.com/HORRIDBEAST/MathViz---The-Ultimate-Math-Py-Library",
     },
     packages=find_packages(),
     classifiers=[
@@ -59,12 +58,7 @@ setup(
             "pytest-cov>=2.0.0",
         ],
     },
-    entry_points={
-        "console_scripts": [
-            "mathviz-demo=mathviz.demo:main",
-            "mathviz-test=mathviz.test:main",
-        ],
-    },
+
     include_package_data=True,
     package_data={
         "mathviz": ["*.py"],
