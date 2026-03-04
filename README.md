@@ -56,6 +56,21 @@ pip install -e .
 
 ---
 
+## ⚠️ Install name vs import name
+
+```bash
+pip install mathvizpro      # install name on PyPI
+```
+```python
+import mathviz              # import name in your code
+from mathviz import AlgebraVisualizer, CalculusVisualizer
+```
+
+The package is published as **`mathvizpro`** on PyPI (the name `mathviz` was already taken).  
+The Python import name is still **`mathviz`** — this is intentional and common (e.g. `pip install Pillow` → `import PIL`).
+
+---
+
 ## Quick Start
 
 ```python
