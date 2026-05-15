@@ -5,7 +5,7 @@ A Python library for creating interactive mathematical visualizations
 with real-time parameter manipulation and educational features.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __author__ = "MathViz Contributors"
 __email__ = "mathviz@example.com"
 

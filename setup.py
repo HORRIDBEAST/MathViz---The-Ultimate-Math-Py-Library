@@ -11,7 +11,7 @@ def read_long_description():
 
 setup(
     name="mathvizpro",
-    version="0.2.0",
+    version="0.2.1",
     author="MathViz Contributors",
     author_email="mathviz@example.com",
     description="Interactive mathematical visualization library for education and exploration",
