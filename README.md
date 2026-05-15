@@ -10,6 +10,8 @@ MathViz makes it easy to explore mathematical concepts through interactive plots
 
 - **Algebra Visualizer** — quadratic & polynomial explorers with live sliders (vertex, roots, discriminant)
 - **Calculus Visualizer** — derivative + tangent-line visualizer; definite integral with shaded area and symbolic result
+- **Linear Algebra Visualizer** *(v0.2.0+)* — 2D matrix transformations, eigenvector discovery mode with complex eigenvalue support
+- **Statistics Visualizer** *(v0.2.0+)* — hypothesis testing (Type-I/II error, power analysis) and Bayesian updating (Beta-Binomial inference)
 - **General-purpose tools** — multi-function plotter, parametric curves, function explorer with auto feature detection
 - **Hover tooltips** via `mplcursors` — see exact x/y values and slope on hover
 - **Jupyter support** — two integration layers:
@@ -180,6 +182,49 @@ plt.show()
 
 Automatically marks roots and critical points.
 
+### Linear Algebra — Eigenvector Discovery Mode
+
+```python
+from mathviz import LinAlgVisualizer
+
+linalg = LinAlgVisualizer()
+linalg.eigenvector_discovery_mode(
+    initial_matrix=[[2, 1], [1, 2]]  # symmetric 2×2 matrix
+)
+plt.show()
+```
+
+Watch the unit circle transform into an ellipse under the matrix transformation. The eigenvectors are highlighted in red when discovered. Supports complex eigenvalues with auto-detection and proper coloring.
+
+### Statistics — Hypothesis Testing & Power Analysis
+
+```python
+from mathviz import StatsVisualizer
+
+stats = StatsVisualizer()
+stats.hypothesis_tester(
+    n_range=(10, 500),          # sample size slider
+    effect_range=(0, 3),        # Cohen's d slider
+    alpha_range=(0.01, 0.2)     # significance level slider
+)
+plt.show()
+```
+
+Explore Type-I error (α, red shading), Type-II error (β, purple shading), and statistical power (1 - β) interactively. Sliders show live updates of p-values and error rates.
+
+### Statistics — Bayesian Updating
+
+```python
+stats.bayesian_updater(
+    prior_alpha=2,      # Beta prior α
+    prior_beta=2,       # Beta prior β
+    max_flips=200       # max number of coin flips
+)
+plt.show()
+```
+
+Visualize prior, likelihood, and posterior distributions as Beta PDFs. Input data (successes/trials) and watch the posterior update in real-time. Shows numerical stability via lgamma-based computation.
+
 ### Save a Figure
 
 ```python
@@ -297,7 +342,7 @@ All text inputs accept standard SymPy / NumPy expressions:
 mathviz/
 ├── __init__.py           # Public API, get_info(), print_info(), quick_start()
 ├── core.py               # MathViz base class — all general-purpose tools
-├── concepts.py           # AlgebraVisualizer, CalculusVisualizer
+├── concepts.py           # AlgebraVisualizer, CalculusVisualizer, LinAlgVisualizer, StatsVisualizer
 ├── widgets.py            # Slider, Button, InputBox wrappers
 ├── examples.py           # ExampleGallery
 ├── jupyter_integration.py# JupyterMathViz (ipywidgets.interact, sliders only)
@@ -314,6 +359,8 @@ tests/
 ├── test_core.py          # 45 tests — MathViz base class
 ├── test_algebra.py       # 38 tests — AlgebraVisualizer
 ├── test_calculus.py      # 37 tests — CalculusVisualizer
+├── test_linalg.py        # 9 tests — LinAlgVisualizer (v0.2.0+)
+├── test_stats.py         # 13 tests — StatsVisualizer (v0.2.0+)
 └── test_integration.py   # 37 tests — package metadata, widgets, utils, gallery
 ```
 
@@ -332,7 +379,7 @@ pytest tests/ --cov=mathviz --cov-report=term-missing
 pytest test_mathviz.py -v
 ```
 
-Current status: **172 tests, 0 failures**.
+Current status: **187 tests, 0 failures** (165 core + 22 v0.2.0 features).
 
 ---
 
@@ -353,6 +400,14 @@ AlgebraVisualizer(MathViz)       — concepts.py
 CalculusVisualizer(MathViz)      — concepts.py
 ├── derivative_visualizer()
 └── integral_visualizer()
+
+LinAlgVisualizer(MathViz)        — concepts.py (v0.2.0+)
+├── space_transformer()
+└── eigenvector_discovery_mode()
+
+StatsVisualizer(MathViz)         — concepts.py (v0.2.0+)
+├── hypothesis_tester()
+└── bayesian_updater()
 
 JupyterSimpleMathViz             — jupyter_simple.py (standalone, no MathViz inheritance)
 ├── interactive_function_plotter()
