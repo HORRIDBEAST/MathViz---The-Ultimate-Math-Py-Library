@@ -1,0 +1,8 @@
+Statistics / probability visualizations
+Linear algebra (matrix transformations, eigenvectors)
+3D surface plots (mpl_toolkits.mplot3d)
+Taylor / Fourier series visualizations
+Implicit function plotting
+Export to interactive HTML (plotly / mpld3)
+Complex number / phase plane visualizations
+Differential equations visualizer

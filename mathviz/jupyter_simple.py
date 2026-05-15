@@ -57,6 +57,21 @@ class JupyterSimpleMathViz:
                 "Install with: pip install ipywidgets"
             )
         plt.rcParams['figure.figsize'] = (10, 6)
+        self._last_figure = None
+
+    def save_last_figure(self, filename="mathviz_plot.png", dpi=300):
+        """Save the most recently rendered figure.
+
+        This is especially useful in VS Code notebooks / Colab where the
+        matplotlib toolbar save icon may be hidden by the frontend.
+        """
+        if self._last_figure is None:
+            raise ValueError(
+                "No rendered figure found yet. Run an interactive_* method first, "
+                "then call save_last_figure()."
+            )
+        self._last_figure.savefig(filename, dpi=dpi, bbox_inches='tight')
+        return filename
 
     # ------------------------------------------------------------------
     # Generic function plotter
@@ -72,6 +87,7 @@ class JupyterSimpleMathViz:
                           x_min=float(x_range[0]),
                           x_max=float(x_range[1])):
             fig, ax = plt.subplots(figsize=(10, 6))
+            self._last_figure = fig
             try:
                 x = sp.Symbol('x')
                 func = sp.sympify(func_str)
@@ -108,6 +124,7 @@ class JupyterSimpleMathViz:
         """Interactive quadratic y = ax² + bx + c with vertex and roots."""
         def plot_quadratic(a=1.0, b=0.0, c=0.0):
             fig, ax = plt.subplots(figsize=(10, 6))
+            self._last_figure = fig
             x = np.linspace(-8, 8, 1000)
             y = a * x**2 + b * x + c
             ax.plot(x, y, 'b-', linewidth=2,
@@ -151,6 +168,7 @@ class JupyterSimpleMathViz:
         """Plot f(x) and f'(x) side by side with a movable tangent point."""
         def plot_derivative(func_str=initial_func, x_point=0.0):
             fig, ax = plt.subplots(figsize=(10, 6))
+            self._last_figure = fig
             try:
                 x = sp.Symbol('x')
                 func = sp.sympify(func_str)
@@ -197,6 +215,7 @@ class JupyterSimpleMathViz:
                           a=float(x_range[0]) / 2,
                           b=float(x_range[1]) / 2):
             fig, ax = plt.subplots(figsize=(10, 6))
+            self._last_figure = fig
             lo, hi = (a, b) if a <= b else (b, a)
             try:
                 x   = sp.Symbol('x')
@@ -249,6 +268,7 @@ class JupyterSimpleMathViz:
         def plot_parametric(x_func="cos(t)", y_func="sin(t)",
                             t_min=0.0, t_max=6.28):
             fig, ax = plt.subplots(figsize=(8, 8))
+            self._last_figure = fig
             try:
                 t    = sp.Symbol('t')
                 xexpr = sp.sympify(x_func)

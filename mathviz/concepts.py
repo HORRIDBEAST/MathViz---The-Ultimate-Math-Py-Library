@@ -2,6 +2,9 @@ import numpy as np
 import sympy as sp
 from .core import MathViz
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+from statistics import NormalDist
+from math import lgamma
 
 # Try to import mplcursors for hover tooltips
 try:
@@ -470,4 +473,390 @@ class CalculusVisualizer(MathViz):
         
         update_integral(None)
         
+        return self.fig
+
+
+class LinAlgVisualizer(MathViz):
+    """Visualizations for linear algebra concepts."""
+
+    def __init__(self, figsize=(10, 10)):
+        super().__init__(figsize=figsize)
+
+    def space_transformer(self, initial_matrix=None,
+                          grid_range=(-5, 5),
+                          axis_limit=8):
+        """
+        Visualize a continuous 2D matrix transformation.
+
+        Interpolation uses M(t) = (1 - t)I + tA, where A is the user matrix.
+
+        Args:
+            initial_matrix: 2x2 matrix [[a, b], [c, d]].
+            grid_range: Integer grid extent as (min, max).
+            axis_limit: Plot axis limit for both x and y.
+        Returns:
+            Matplotlib figure.
+        """
+        if initial_matrix is None:
+            initial_matrix = [[2, 1], [-1, 1]]
+
+        # Validate matrix shape early for clear errors.
+        arr = np.array(initial_matrix, dtype=float)
+        if arr.shape != (2, 2):
+            raise ValueError("initial_matrix must be a 2x2 matrix, e.g. [[2, 1], [-1, 1]].")
+
+        self.create_figure()
+        self.fig.subplots_adjust(bottom=0.35)
+
+        # Matrix element sliders for A = [[a, b], [c, d]].
+        slider_a = self.add_slider('a (i-hat x)', -4, 4, arr[0, 0], [0.15, 0.25, 0.3, 0.03])
+        slider_b = self.add_slider('b (j-hat x)', -4, 4, arr[0, 1], [0.60, 0.25, 0.3, 0.03])
+        slider_c = self.add_slider('c (i-hat y)', -4, 4, arr[1, 0], [0.15, 0.20, 0.3, 0.03])
+        slider_d = self.add_slider('d (j-hat y)', -4, 4, arr[1, 1], [0.60, 0.20, 0.3, 0.03])
+        slider_t = self.add_slider('Time (t)', 0, 1, 1, [0.2, 0.10, 0.6, 0.04])
+
+        # Build reference grid.
+        g_min, g_max = int(grid_range[0]), int(grid_range[1])
+        grid_lines = []
+        for i in range(g_min, g_max + 1):
+            grid_lines.append(np.array([[i, i], [g_min, g_max]], dtype=float))
+            grid_lines.append(np.array([[g_min, g_max], [i, i]], dtype=float))
+
+        self.ax.set_xlim(-axis_limit, axis_limit)
+        self.ax.set_ylim(-axis_limit, axis_limit)
+        self.ax.axhline(0, color='black', linewidth=1)
+        self.ax.axvline(0, color='black', linewidth=1)
+        self.ax.set_aspect('equal')
+        self.ax.grid(True, alpha=0.2)
+
+        plotted_lines = []
+        for _ in grid_lines:
+            line, = self.ax.plot([], [], color='gray', alpha=0.45, linewidth=1)
+            plotted_lines.append(line)
+
+        # Basis vectors and determinant parallelogram.
+        i_vec = self.ax.quiver(0, 0, 1, 0, angles='xy', scale_units='xy', scale=1,
+                               color='green', zorder=5, label='i-hat')
+        j_vec = self.ax.quiver(0, 0, 0, 1, angles='xy', scale_units='xy', scale=1,
+                               color='red', zorder=5, label='j-hat')
+        det_poly = Polygon([[0, 0], [1, 0], [1, 1], [0, 1]], closed=True,
+                           facecolor='yellow', edgecolor='goldenrod', alpha=0.3,
+                           label='Determinant Area', zorder=2)
+        self.ax.add_patch(det_poly)
+        self.ax.legend(loc='upper right')
+
+        def update(val=None):
+            a, b = slider_a.val, slider_b.val
+            c, d = slider_c.val, slider_d.val
+            t = slider_t.val
+
+            # M(t) = (1 - t)I + tA
+            m11 = (1 - t) + t * a
+            m12 = t * b
+            m21 = t * c
+            m22 = (1 - t) + t * d
+
+            for original_line, plot_line in zip(grid_lines, plotted_lines):
+                x = original_line[0]
+                y = original_line[1]
+                new_x = m11 * x + m12 * y
+                new_y = m21 * x + m22 * y
+                plot_line.set_data(new_x, new_y)
+
+            i_vec.set_UVC(m11, m21)
+            j_vec.set_UVC(m12, m22)
+
+            poly = np.array([[0, 0], [m11, m21], [m11 + m12, m21 + m22], [m12, m22]], dtype=float)
+            det_poly.set_xy(poly)
+
+            current_det = (m11 * m22) - (m12 * m21)
+            self.ax.set_title(f"Space Transformer | Det = {current_det:.3f}")
+            self.fig.canvas.draw_idle()
+
+        for slider in [slider_a, slider_b, slider_c, slider_d, slider_t]:
+            slider.on_changed(update)
+
+        update()
+        return self.fig
+
+    def eigenvector_discovery_mode(self, initial_matrix=None,
+                                   vectors_count=48,
+                                   axis_limit=3):
+        """
+        Highlight vectors that stay on their span after transformation.
+
+        Args:
+            initial_matrix: 2x2 matrix [[a, b], [c, d]].
+            vectors_count: Number of unit vectors sampled on the circle.
+            axis_limit: Plot axis limit for both x and y.
+        Returns:
+            Matplotlib figure.
+        """
+        if initial_matrix is None:
+            initial_matrix = [[2, 1], [1, 2]]
+
+        arr = np.array(initial_matrix, dtype=float)
+        if arr.shape != (2, 2):
+            raise ValueError("initial_matrix must be a 2x2 matrix, e.g. [[2, 1], [1, 2]].")
+
+        self.create_figure()
+        self.fig.subplots_adjust(bottom=0.35)
+
+        slider_a = self.add_slider('a', -4, 4, arr[0, 0], [0.15, 0.25, 0.3, 0.03])
+        slider_b = self.add_slider('b', -4, 4, arr[0, 1], [0.60, 0.25, 0.3, 0.03])
+        slider_c = self.add_slider('c', -4, 4, arr[1, 0], [0.15, 0.20, 0.3, 0.03])
+        slider_d = self.add_slider('d', -4, 4, arr[1, 1], [0.60, 0.20, 0.3, 0.03])
+        slider_t = self.add_slider('Time (t)', 0, 1, 1, [0.2, 0.10, 0.6, 0.04])
+
+        self.ax.set_xlim(-axis_limit, axis_limit)
+        self.ax.set_ylim(-axis_limit, axis_limit)
+        self.ax.axhline(0, color='black', linewidth=1)
+        self.ax.axvline(0, color='black', linewidth=1)
+        self.ax.set_aspect('equal')
+        self.ax.grid(True, alpha=0.2)
+
+        theta = np.linspace(0, 2 * np.pi, 400)
+        unit_circle, = self.ax.plot(np.cos(theta), np.sin(theta), 'k--', alpha=0.4, label='Unit Circle')
+        transformed_shape, = self.ax.plot([], [], color='tab:blue', linewidth=2, label='Transformed Circle')
+
+        unit_angles = np.linspace(0, 2 * np.pi, vectors_count, endpoint=False)
+        unit_vecs = np.stack([np.cos(unit_angles), np.sin(unit_angles)], axis=1)
+
+        # Keep references to many line artists for fast updates.
+        candidate_lines = []
+        for _ in range(vectors_count):
+            line, = self.ax.plot([], [], color='lightgray', linewidth=1.2, alpha=0.8)
+            candidate_lines.append(line)
+
+        eig_text = self.ax.text(0.02, 0.98, '', transform=self.ax.transAxes,
+                                va='top', ha='left', fontsize=10,
+                                bbox=dict(boxstyle='round', facecolor='white', alpha=0.85))
+
+        self.ax.legend(loc='upper right')
+
+        def update(val=None):
+            a, b = slider_a.val, slider_b.val
+            c, d = slider_c.val, slider_d.val
+            t = slider_t.val
+
+            m11 = (1 - t) + t * a
+            m12 = t * b
+            m21 = t * c
+            m22 = (1 - t) + t * d
+            m = np.array([[m11, m12], [m21, m22]], dtype=float)
+
+            # Transform unit circle.
+            circle_pts = np.stack([np.cos(theta), np.sin(theta)], axis=1)
+            transformed_pts = (m @ circle_pts.T).T
+            transformed_shape.set_data(transformed_pts[:, 0], transformed_pts[:, 1])
+
+            # Parallel test: cross(u, v) ~= 0 where v = M u.
+            tol = 0.06
+            for i, u in enumerate(unit_vecs):
+                v = m @ u
+                cross_mag = abs(u[0] * v[1] - u[1] * v[0])
+                line = candidate_lines[i]
+                line.set_data([0, v[0]], [0, v[1]])
+                if cross_mag <= tol:
+                    line.set_color('crimson')
+                    line.set_linewidth(2.6)
+                    line.set_alpha(0.95)
+                else:
+                    line.set_color('lightgray')
+                    line.set_linewidth(1.2)
+                    line.set_alpha(0.8)
+
+            # Exact eigensystem from matrix (for labels).
+            eigvals, eigvecs = np.linalg.eig(m)
+            if np.all(np.isreal(eigvals)):
+                eigvals = np.real(eigvals)
+                det_val = np.linalg.det(m)
+                eig_text.set_text(
+                    f"Eigenvalues: λ1={eigvals[0]:.3f}, λ2={eigvals[1]:.3f}\n"
+                    f"det(M)={det_val:.3f}, tr(M)={np.trace(m):.3f}"
+                )
+            else:
+                det_val = np.linalg.det(m)
+                eig_text.set_text(
+                    f"Eigenvalues are complex\n"
+                    f"det(M)={det_val:.3f}, tr(M)={np.trace(m):.3f}"
+                )
+
+            self.ax.set_title('Eigenvector Discovery Mode')
+            self.fig.canvas.draw_idle()
+
+        for slider in [slider_a, slider_b, slider_c, slider_d, slider_t]:
+            slider.on_changed(update)
+
+        update()
+        return self.fig
+
+
+class StatsVisualizer(MathViz):
+    """Visualizations for statistics and probability concepts."""
+
+    def __init__(self, figsize=(12, 8)):
+        super().__init__(figsize=figsize)
+        self._normal = NormalDist(mu=0.0, sigma=1.0)
+
+    def _beta_pdf(self, x_vals, alpha, beta):
+        """Numerically stable beta PDF without requiring scipy."""
+        eps = 1e-9
+        x = np.clip(x_vals, eps, 1 - eps)
+        log_norm = lgamma(alpha + beta) - lgamma(alpha) - lgamma(beta)
+        log_pdf = log_norm + (alpha - 1) * np.log(x) + (beta - 1) * np.log(1 - x)
+        return np.exp(log_pdf)
+
+    def hypothesis_tester(self,
+                          n_range=(10, 500),
+                          effect_range=(0.0, 3.0),
+                          alpha_range=(0.01, 0.20)):
+        """
+        Interactive Type-I/Type-II error and power visualizer.
+
+        Assumes two-sided z-test with unit variance and standardized effect size.
+        """
+        self.create_figure()
+        self.fig.subplots_adjust(bottom=0.34)
+
+        slider_n = self.add_slider('sample size n', n_range[0], n_range[1], 60, [0.10, 0.20, 0.34, 0.03])
+        slider_eff = self.add_slider('effect size d', effect_range[0], effect_range[1], 0.6, [0.58, 0.20, 0.34, 0.03])
+        slider_alpha = self.add_slider('alpha', alpha_range[0], alpha_range[1], 0.05, [0.20, 0.12, 0.60, 0.03])
+
+        for s in (slider_n, slider_eff, slider_alpha):
+            s.label.set_fontsize(10)
+            s.valtext.set_fontsize(10)
+
+        info_text = self.ax.text(0.02, 0.98, '', transform=self.ax.transAxes,
+                                 va='top', ha='left', fontsize=10,
+                                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+
+        def update(val=None):
+            n = max(2, int(round(slider_n.val)))
+            d = slider_eff.val
+            alpha = slider_alpha.val
+
+            delta = d * np.sqrt(n)
+            z_crit = self._normal.inv_cdf(1 - alpha / 2)
+
+            x_min = min(-6, delta - 6)
+            x_max = max(6, delta + 6)
+            x = np.linspace(x_min, x_max, 1200)
+
+            # H0: Z~N(0,1), H1: Z~N(delta,1)
+            pdf_h0 = np.array([self._normal.pdf(v) for v in x])
+            pdf_h1 = np.array([NormalDist(mu=delta, sigma=1).pdf(v) for v in x])
+
+            self.ax.clear()
+            self.ax.plot(x, pdf_h0, color='tab:blue', linewidth=2, label='H0: N(0,1)')
+            self.ax.plot(x, pdf_h1, color='tab:orange', linewidth=2, label=f'H1: N(δ,1), δ={delta:.2f}')
+
+            # Type-I (alpha tails under H0)
+            left_tail = x <= -z_crit
+            right_tail = x >= z_crit
+            self.ax.fill_between(x[left_tail], 0, pdf_h0[left_tail], color='red', alpha=0.25, label='Type I area')
+            self.ax.fill_between(x[right_tail], 0, pdf_h0[right_tail], color='red', alpha=0.25)
+
+            # Type-II (beta center under H1)
+            beta_mask = (x >= -z_crit) & (x <= z_crit)
+            self.ax.fill_between(x[beta_mask], 0, pdf_h1[beta_mask], color='purple', alpha=0.25, label='Type II area')
+
+            beta = NormalDist(mu=delta, sigma=1).cdf(z_crit) - NormalDist(mu=delta, sigma=1).cdf(-z_crit)
+            power = 1.0 - beta
+            p_value_at_delta = 2 * (1 - self._normal.cdf(abs(delta)))
+
+            self.ax.axvline(-z_crit, color='black', linestyle='--', alpha=0.6)
+            self.ax.axvline(z_crit, color='black', linestyle='--', alpha=0.6)
+            self.ax.set_title('Interactive Hypothesis Tester')
+            self.ax.set_xlabel('z')
+            self.ax.set_ylabel('Density')
+            self.ax.grid(True, alpha=0.3)
+            self.ax.legend(loc='upper right')
+
+            info_text = (
+                f"n={n}, d={d:.2f}, α={alpha:.3f}\n"
+                f"β={beta:.3f}, Power={power:.3f}\n"
+                f"Approx p-value at z=δ: {p_value_at_delta:.4f}"
+            )
+            self.ax.text(0.02, 0.98, info_text, transform=self.ax.transAxes,
+                         va='top', ha='left', fontsize=10,
+                         bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+
+            self.fig.canvas.draw_idle()
+
+        for s in [slider_n, slider_eff, slider_alpha]:
+            s.on_changed(update)
+
+        update()
+        return self.fig
+
+    def bayesian_updater(self,
+                         prior_alpha=2.0,
+                         prior_beta=2.0,
+                         max_flips=200):
+        """
+        Real-time Beta-Binomial Bayesian updater.
+
+        Prior: Beta(alpha, beta)
+        Likelihood data: heads out of flips
+        Posterior: Beta(alpha+heads, beta+flips-heads)
+        """
+        self.create_figure()
+        self.fig.subplots_adjust(bottom=0.34)
+
+        slider_a0 = self.add_slider('prior α', 1.0, 20.0, prior_alpha, [0.08, 0.20, 0.36, 0.03])
+        slider_b0 = self.add_slider('prior β', 1.0, 20.0, prior_beta, [0.58, 0.20, 0.36, 0.03])
+        slider_flips = self.add_slider('flips n', 1, max_flips, 30, [0.08, 0.12, 0.36, 0.03])
+        slider_heads = self.add_slider('heads k', 0, max_flips, 18, [0.58, 0.12, 0.36, 0.03])
+
+        for s in (slider_a0, slider_b0, slider_flips, slider_heads):
+            s.label.set_fontsize(10)
+            s.valtext.set_fontsize(10)
+
+        def update(val=None):
+            a0 = slider_a0.val
+            b0 = slider_b0.val
+            n = int(round(slider_flips.val))
+            k = int(round(slider_heads.val))
+            if k > n:
+                k = n
+
+            a1 = a0 + k
+            b1 = b0 + (n - k)
+
+            x = np.linspace(0, 1, 1000)
+            prior_pdf = self._beta_pdf(x, a0, b0)
+            post_pdf = self._beta_pdf(x, a1, b1)
+
+            self.ax.clear()
+            self.ax.plot(x, prior_pdf, color='tab:blue', linewidth=2, label=f'Prior Beta({a0:.1f},{b0:.1f})')
+            self.ax.plot(x, post_pdf, color='tab:green', linewidth=2, label=f'Posterior Beta({a1:.1f},{b1:.1f})')
+
+            prior_mean = a0 / (a0 + b0)
+            post_mean = a1 / (a1 + b1)
+
+            self.ax.axvline(prior_mean, color='tab:blue', linestyle='--', alpha=0.7)
+            self.ax.axvline(post_mean, color='tab:green', linestyle='--', alpha=0.7)
+
+            self.ax.set_title('Real-Time Bayesian Updater (Beta-Binomial)')
+            self.ax.set_xlabel('Probability of success p')
+            self.ax.set_ylabel('Density')
+            self.ax.grid(True, alpha=0.3)
+            self.ax.legend(loc='upper right')
+
+            info = (
+                f"Data: k={k} heads out of n={n}\n"
+                f"Prior mean={prior_mean:.3f}\n"
+                f"Posterior mean={post_mean:.3f}"
+            )
+            self.ax.text(0.02, 0.98, info, transform=self.ax.transAxes,
+                         va='top', ha='left', fontsize=10,
+                         bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+
+            self.fig.canvas.draw_idle()
+
+        for s in [slider_a0, slider_b0, slider_flips, slider_heads]:
+            s.on_changed(update)
+
+        update()
         return self.fig

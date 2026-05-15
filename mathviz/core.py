@@ -19,6 +19,7 @@ class MathViz:
         self.ax = None
         self.sliders = {}
         self.widgets = {}
+        self._multi_function_cursor = None
         
     def create_figure(self, subplot_layout: Tuple[int, int, int] = (1, 1, 1)):
         """
@@ -252,8 +253,17 @@ class MathViz:
         def plot_all_functions():
             """Plot all current functions"""
             self.ax.clear()
+
+            # Remove previous cursor before recreating artists to avoid callback buildup/lag.
+            if self._multi_function_cursor is not None:
+                try:
+                    self._multi_function_cursor.remove()
+                except Exception:
+                    pass
+                self._multi_function_cursor = None
             
             x_vals = np.linspace(x_min_slider.val, x_max_slider.val, 1000)
+            plotted_lines = []
             
             for i, func_str in enumerate(current_functions):
                 if func_str.strip():
@@ -266,21 +276,24 @@ class MathViz:
                         color = colors[i % len(colors)]
                         line, = self.ax.plot(x_vals, y_vals, color=color, linewidth=2, 
                                    label=f'f{i+1}(x) = {func}')
-                        
-                        # ADD HOVER HERE
-                        try:
-                            import mplcursors
-                            cursor = mplcursors.cursor(line, hover=True)
-                            func_copy = func  # Capture for closure
-                            @cursor.connect("add")
-                            def on_add(sel, f=func_copy):
-                                x_val, y_val = sel.target
-                                sel.annotation.set_text(f'f(x) = {f}\nx = {x_val:.3f}\ny = {y_val:.3f}')
-                        except ImportError:
-                            pass
+                        plotted_lines.append(line)
                     
                     except Exception as e:
                         continue
+
+            # One shared cursor for all lines: smoother hover and supports multiple annotations.
+            if plotted_lines:
+                try:
+                    import mplcursors
+                    self._multi_function_cursor = mplcursors.cursor(plotted_lines, hover=True, multiple=True)
+
+                    @self._multi_function_cursor.connect("add")
+                    def on_add(sel):
+                        x_val, y_val = sel.target
+                        label = sel.artist.get_label()
+                        sel.annotation.set_text(f'{label}\nx = {x_val:.3f}\ny = {y_val:.3f}')
+                except ImportError:
+                    self._multi_function_cursor = None
             
             self.ax.grid(True, alpha=0.3)
             self.ax.legend()
@@ -435,6 +448,12 @@ class MathViz:
     
     def close(self):
         """Close the current figure"""
+        if self._multi_function_cursor is not None:
+            try:
+                self._multi_function_cursor.remove()
+            except Exception:
+                pass
+            self._multi_function_cursor = None
         if self.fig is not None:
             plt.close(self.fig)
             self.fig = None

@@ -179,6 +179,21 @@ class TestUtils:
         # Two different plots should produce different data
         assert url1 != url2
 
+    def test_export_to_data_url_raises_typeerror_on_int(self):
+        from mathviz.utils import export_to_data_url
+        with pytest.raises(TypeError, match="Expected a matplotlib Figure, got int"):
+            export_to_data_url(42)
+
+    def test_export_to_data_url_raises_typeerror_on_string(self):
+        from mathviz.utils import export_to_data_url
+        with pytest.raises(TypeError, match="Expected a matplotlib Figure, got str"):
+            export_to_data_url("not_a_figure")
+
+    def test_export_to_data_url_raises_typeerror_on_none(self):
+        from mathviz.utils import export_to_data_url
+        with pytest.raises(TypeError, match="Expected a matplotlib Figure, got NoneType"):
+            export_to_data_url(None)
+
 
 # --- ExampleGallery ---
 

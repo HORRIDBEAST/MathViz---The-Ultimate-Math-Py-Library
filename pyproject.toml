@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mathvizpro"
-version = "0.1.0"
+version = "0.2.0"
 description = "Interactive mathematical visualization library for education and exploration"
 readme = "README.md"
 license = { file = "LICENSE" }

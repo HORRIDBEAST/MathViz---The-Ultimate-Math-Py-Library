@@ -5,7 +5,7 @@ A Python library for creating interactive mathematical visualizations
 with real-time parameter manipulation and educational features.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "MathViz Contributors"
 __email__ = "mathviz@example.com"
 
@@ -13,7 +13,7 @@ __email__ = "mathviz@example.com"
 from .core import MathViz
 
 # Specialized visualizers
-from .concepts import AlgebraVisualizer, CalculusVisualizer
+from .concepts import AlgebraVisualizer, CalculusVisualizer, LinAlgVisualizer, StatsVisualizer
 
 # Widget components
 from .widgets import Slider, Button, InputBox
@@ -42,6 +42,8 @@ __all__ = [
     'MathViz',
     'AlgebraVisualizer', 
     'CalculusVisualizer',
+    'LinAlgVisualizer',
+    'StatsVisualizer',
     
     # Widget components
     'Slider',
@@ -112,14 +114,24 @@ MathViz Quick Start Guide:
    from mathviz import ExampleGallery
    gallery = ExampleGallery()
    gallery.algebra_examples()
+
+5. Linear Algebra Space Transformer:
+    from mathviz import LinAlgVisualizer
+    viz = LinAlgVisualizer()
+    viz.space_transformer([[2, 1], [-1, 1]])
+
+6. Statistics Hypothesis Tester:
+    from mathviz import StatsVisualizer
+    viz = StatsVisualizer()
+    viz.hypothesis_tester()
    
-5. Jupyter Integration — slider-only (if ipywidgets installed):
+7. Jupyter Integration — slider-only (if ipywidgets installed):
    from mathviz import JupyterMathViz
    if JupyterMathViz:
        viz = JupyterMathViz()
        viz.interactive_quadratic()
 
-6. Jupyter Integration — with text input (recommended for notebooks):
+8. Jupyter Integration — with text input (recommended for notebooks):
    from mathviz import JupyterSimpleMathViz
    if JupyterSimpleMathViz:
        viz = JupyterSimpleMathViz()

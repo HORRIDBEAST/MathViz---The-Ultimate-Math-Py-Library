@@ -219,6 +219,31 @@ viz.interactive_derivative(initial_func="x**3")
 viz.interactive_integral(initial_func="sin(x)")
 viz.interactive_quadratic()
 viz.interactive_parametric()
+
+# Save the latest rendered plot even if toolbar save icon is missing:
+viz.save_last_figure("my_plot.png", dpi=300)
+```
+
+### Saving in VS Code Notebooks / Colab
+
+Some notebook frontends hide or limit the matplotlib toolbar save icon. This is
+frontend behavior, not a MathViz failure.
+
+- For `MathViz`, `AlgebraVisualizer`, `CalculusVisualizer`: use `viz.save_figure(...)`
+- For `JupyterSimpleMathViz`: use `viz.save_last_figure(...)`
+
+```python
+from mathviz import AlgebraVisualizer, JupyterSimpleMathViz
+
+# Core visualizer save
+core_viz = AlgebraVisualizer()
+core_viz.quadratic_explorer()
+core_viz.save_figure("quadratic.png", dpi=300)
+
+# JupyterSimple save
+simple_viz = JupyterSimpleMathViz()
+simple_viz.interactive_function_plotter("sin(x)")
+simple_viz.save_last_figure("function.png", dpi=300)
 ```
 
 ### JupyterMathViz (slider-only fallback)
